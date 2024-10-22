@@ -1,6 +1,7 @@
 const Book = require('../models/Book');
 const fs = require('fs');
 
+// Création d'un livre
 exports.createBook = (req, res, next) => {
     try {
         if (!req.file) {
@@ -25,6 +26,7 @@ exports.createBook = (req, res, next) => {
       }
 };
 
+// Obtenir un seul livre
 exports.getOneBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id })
     .then((book) => {
@@ -39,6 +41,7 @@ exports.getOneBook = (req, res, next) => {
     });
 };
 
+// Modifier un livre
 exports.modifyBook = (req, res, next) => {
     const bookObject = req.file ? {
         ...JSON.parse(req.body.thing),
@@ -61,6 +64,7 @@ exports.modifyBook = (req, res, next) => {
         });
 };
 
+// Supprimer un livre
 exports.deleteBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
     .then(book => {
@@ -80,6 +84,7 @@ exports.deleteBook = (req, res, next) => {
     });
 };
 
+// Obtenir tous les livres
 exports.getAllBook = (req, res, next) => {
     Book.find().then(
         (books) => {
@@ -94,6 +99,65 @@ exports.getAllBook = (req, res, next) => {
     );
 };
 
+// Note un livre
+exports.rateBook = (req, res, next) => {
+  const bookId = req.params.id;
+  const { userId, rating } = req.body;
+
+  console.log('Corps de la requête:', req.body);
+
+  const ratingNumber = parseFloat(rating);
+  if (isNaN(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
+    console.log('Erreur: la note doit être un nombre valide entre 0 et 5.');
+    return res.status(400).json({ message: 'Rating must be a number between 0 and 5.' });
+  }
+
+  Book.findOne({ _id: bookId })
+    .then(book => {
+      if (!book) {
+        console.log('Livre non trouvé:', bookId);
+        return res.status(404).json({ message: 'Book not found' });
+      }
+
+      console.log('Livre trouvé:', book);
+
+      const userAlreadyRated = book.ratings.find(rating => rating.userId === userId);
+      if (userAlreadyRated) {
+        console.log('Utilisateur a déjà noté ce livre:', userId);
+        return res.status(403).json({ message: 'You have already rated this book.' });
+      }
+
+      book.ratings.push({ userId, grade: ratingNumber });
+      console.log('Notes après ajout:', book.ratings);
+
+      const totalRating = book.ratings.reduce((acc, rating) => acc + rating.grade, 0);
+      console.log('Total des notes:', totalRating);
+
+      if (book.ratings.length > 0) {
+        book.averageRating = totalRating / book.ratings.length;
+        console.log('Moyenne calculée:', book.averageRating);
+      } else {
+        book.averageRating = 0;
+        console.log('Pas de notes, moyenne définie à 0');
+      }
+
+      book.save()
+        .then(updatedBook => {
+          console.log('Livre mis à jour avec succès:', updatedBook);
+          res.status(200).json(updatedBook);
+        })
+        .catch(error => {
+          console.error('Erreur lors de la sauvegarde du livre:', error);
+          res.status(400).json({ error });
+        });
+    })
+    .catch(error => {
+      console.error('Erreur lors de la recherche du livre:', error);
+      res.status(500).json({ error });
+    });
+};
+
+// Obtenir les meilleurs livres
 exports.getBestRatedBook = (req, res, next) => {
     Book.find()
       .sort({ averageRating: -1 })
@@ -104,4 +168,4 @@ exports.getBestRatedBook = (req, res, next) => {
       .catch(error => {
         res.status(400).json({ error });
       });
-  };
+};
