@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
-  console.log('Request Headers:', req.headers); 
+  console.log('Request Headers:', req.headers);
 
   try {
     if (!req.headers.authorization) {
@@ -10,13 +10,13 @@ module.exports = (req, res, next) => {
     }
 
     const token = req.headers.authorization.split(' ')[1];
-    console.log('Token reçu:', token);  
+    console.log('Token reçu:', token);
 
     if (!token) {
       return res.status(401).json({ message: 'Token missing' });
     }
 
-    const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');  
+    const decodedToken = jwt.verify(token, 'RANDOM_TOKEN_SECRET');
     const userId = decodedToken.userId;
     req.auth = { userId: userId };
     next();
