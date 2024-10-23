@@ -52,12 +52,12 @@ exports.modifyBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: 'Not authorized' });
-      } else {
-        Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
-          .then(() => res.status(200).json({ message: 'Objet modifié!' }))
-          .catch(error => res.status(401).json({ error }));
+        return res.status(403).json({ message: 'Unauthorized request' });
       }
+
+      Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+        .then(() => res.status(200).json({ message: 'Objet modifié!' }))
+        .catch(error => res.status(400).json({ error }));
     })
     .catch((error) => {
       res.status(400).json({ error });
@@ -69,15 +69,15 @@ exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id })
     .then(book => {
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: 'Not authorized' });
-      } else {
-        const filename = book.imageUrl.split('/images/')[1];
-        fs.unlink(`images/${filename}`, () => {
-          Book.deleteOne({ _id: req.params.id })
-            .then(() => { res.status(200).json({ message: 'Objet supprimé !' }) })
-            .catch(error => res.status(401).json({ error }));
-        });
+        return res.status(403).json({ message: 'Unauthorized request' });
       }
+
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, () => {
+        Book.deleteOne({ _id: req.params.id })
+          .then(() => { res.status(200).json({ message: 'Book deleted successfully!' }) })
+          .catch(error => res.status(400).json({ error }));
+      });
     })
     .catch(error => {
       res.status(500).json({ error });
@@ -92,9 +92,7 @@ exports.getAllBook = (req, res, next) => {
     }
   ).catch(
     (error) => {
-      res.status(400).json({
-        error: error
-      });
+      res.status(400).json({ error });
     }
   );
 };
