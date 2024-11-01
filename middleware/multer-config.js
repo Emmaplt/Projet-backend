@@ -17,4 +17,22 @@ const storage = multer.diskStorage({
   }
 });
 
-module.exports = multer({ storage: storage }).single('image');
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 2 * 1024 * 1024 }
+}).single('image');
+
+module.exports = (req, res, next) => {
+  upload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ message: 'File size exceeds the 2MB limit.' });
+      }
+      return res.status(500).json({ error: err.message });
+    } else if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    next();
+  });
+};

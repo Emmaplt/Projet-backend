@@ -49,6 +49,7 @@ exports.modifyBook = (req, res, next) => {
   } : { ...req.body };
 
   delete bookObject._userId;
+  delete bookObject.ratings;
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (book.userId != req.auth.userId) {
@@ -104,12 +105,6 @@ exports.rateBook = (req, res, next) => {
 
   console.log('Corps de la requête:', req.body);
 
-  const ratingNumber = parseFloat(rating);
-  if (isNaN(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
-    console.log('Erreur: la note doit être un nombre valide entre 0 et 5.');
-    return res.status(400).json({ message: 'Rating must be a number between 0 and 5.' });
-  }
-
   Book.findOne({ _id: bookId })
     .then(book => {
       if (!book) {
@@ -123,6 +118,12 @@ exports.rateBook = (req, res, next) => {
       if (userAlreadyRated) {
         console.log('Utilisateur a déjà noté ce livre:', userId);
         return res.status(403).json({ message: 'You have already rated this book.' });
+      }
+
+      const ratingNumber = parseFloat(rating);
+      if (isNaN(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
+        console.log('Erreur: la note doit être un nombre valide entre 0 et 5.');
+        return res.status(400).json({ message: 'Rating must be a number between 0 and 5.' });
       }
 
       book.ratings.push({ userId, grade: ratingNumber });
